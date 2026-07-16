@@ -16,7 +16,6 @@ import {
   versionYears,
   teachers,
 } from "../data";
-import { StatusBadge } from "../components/StatusBadge";
 import { Modal, Field, SelectField, ModalActions } from "../components/Modal";
 
 const bloomColors = {
@@ -77,7 +76,7 @@ export default function Courses() {
       id: data.length + 1,
       name: form.name, code: form.code, program: form.program,
       units: Number(form.units), desc: form.desc,
-      status: "Draft", clos: form.clos,
+      status: "Submitted", clos: form.clos,
       ...(form.yearOffered ? { yearOffered: Number(form.yearOffered) } : {}),
       ...(form.semester !== "" ? { semester: Number(form.semester) } : {}),
     };
@@ -225,9 +224,8 @@ export default function Courses() {
 
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
-                    <Typography variant="body2" fontWeight={600} color="grey.800">{c.name}</Typography>
-                    <Chip label={c.code} size="small" sx={{ fontFamily: "monospace", bgcolor: "grey.100", color: "grey.500", fontSize: 11, height: 20 }} />
-                    <StatusBadge status={c.status} />
+                    <Typography variant="body2" fontWeight={600} color="grey.800">{c.code}</Typography>
+                    <Chip label={c.name} size="small" sx={{ fontFamily: "monospace", bgcolor: "grey.100", color: "grey.500", fontSize: 11, height: 20 }} />
                   </Stack>
                   <Typography variant="caption" color="grey.500" sx={{ mt: 0.25, display: "block" }}>
                     {c.program} · {c.units} units · {c.clos.length} CLOs
@@ -277,32 +275,39 @@ export default function Courses() {
           <Stack spacing={2}>
             {/* COURSE NAME + CODE */}
             <Grid container spacing={1.5}>
-              <Grid size={9}>
-                <Field
-                  label="Course Name"
-                  value={form.name}
-                  onChange={v => setForm(f => ({ ...f, name: v }))}
-                />
-              </Grid>
-
               <Grid size={3}>
                 <Field
-                  label="Course Code"
+                  label="Catalog Number"
                   value={form.code}
                   onChange={v => setForm(f => ({ ...f, code: v }))}
+                />
+              </Grid>
+              <Grid size={9}>
+                <Field
+                  label="Course Title"
+                  value={form.name}
+                  onChange={v => setForm(f => ({ ...f, name: v }))}
                 />
               </Grid>
             </Grid>
             {/* PROGRAM + UNITS */}
             <Grid container spacing={1.5}>
-              <Grid size={9}>
+              <Grid size={5}>
                 <SelectField
-                  label="Program"
+                  label="Offering Department/Program"
                   value={form.program}
                   onChange={v => setForm(f => ({ ...f, program: v }))}
                   options={programsData.map(p => p.code)}
                 />
               </Grid>
+              <Grid size={4}>
+                <TextField
+                label="Version Year"
+                fullWidth
+                value={form.versionYear}
+                onChange={(e) => setForm(f => ({...f, versionYear: e.target.value,}))}
+              />
+            </Grid>
 
               <Grid size={3}>
                 <Field
@@ -312,35 +317,6 @@ export default function Courses() {
                   type="number"
                   placeholder="3"
                 />
-              </Grid>
-            </Grid>
-            <Grid container spacing={1.5}>
-              <Grid size={6}>
-                <TextField
-                  select label="Year Level" fullWidth size="small"
-                  value={form.yearOffered} onChange={e => setForm(f => ({ ...f, yearOffered: e.target.value }))}
-                >
-                  <MenuItem value="">— Select year —</MenuItem>
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(y => <MenuItem key={y} value={y}>Year {y}</MenuItem>)}
-                </TextField>
-              </Grid>
-              <Grid size ={6}>
-                <TextField
-                  select label="Semester" fullWidth size="small"
-                  value={form.semester} onChange={e => setForm(f => ({ ...f, semester: e.target.value }))}
-                >
-                  <MenuItem value="">— Select semester —</MenuItem>
-                  <MenuItem value="1">0</MenuItem>
-                  <MenuItem value="2">1</MenuItem>
-                  <MenuItem value="3">2</MenuItem>
-                  <MenuItem value="4">3</MenuItem>
-                  <MenuItem value="5">4</MenuItem>
-                  <MenuItem value="6">5</MenuItem>
-                  <MenuItem value="7">6</MenuItem>
-                  <MenuItem value="8">7</MenuItem>
-                  <MenuItem value="9">8</MenuItem>
-                  <MenuItem value="10">9</MenuItem>
-                </TextField>
               </Grid>
             </Grid>
             <Box sx={{ width: "100%" }}>
@@ -356,6 +332,20 @@ export default function Courses() {
                 <Typography variant="caption" fontWeight={500} color="grey.500">Course Learning Outcomes</Typography>
                 <Button size="small" startIcon={<AddIcon sx={{ fontSize: 14 }} />} onClick={addCLORow} sx={{ fontSize: 12 }}>Add CLO</Button>
               </Stack>
+              <TextField
+                label="Competency Description"
+                value={form.competency}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    competency: e.target.value,
+                  }))
+                }
+                fullWidth
+                multiline
+                rows={1}
+                sx={{ mb: 2 }}
+              />
               <Stack sx={{ maxHeight: 220, overflowY: "auto", pr: 0.5 }}>
                 {form.clos.map((cl, i) => (
                   <Stack key={i} direction="row" spacing={1} alignItems="flex-start" sx={{ py: 1.5, borderTop: i > 0 ? "1px solid" : "none", borderColor: "grey.200" }}>
@@ -371,6 +361,18 @@ export default function Courses() {
                     </Box>
                     <TextField select value={cl.bloom} onChange={e => updateCLO(i, "bloom", e.target.value)} label="Bloom Level" size="small" sx={{ width: 140 }}>
                       {bloomLevels.map(b => <MenuItem key={b} value={b}>{b}</MenuItem>)}
+                    </TextField>
+                    <TextField
+                      select
+                      value={cl.ksa}
+                      onChange={e => updateCLO(i, "ksa", e.target.value)}
+                      label="KSA"
+                      size="small"
+                      sx={{ width: 120 }}
+                    >
+                      <MenuItem value="Knowledge">Knowledge</MenuItem>
+                      <MenuItem value="Skills">Skills</MenuItem>
+                      <MenuItem value="Attitude">Attitude</MenuItem>
                     </TextField>
                     {form.clos.length > 1 && (
                       <IconButton size="small" onClick={() => removeCLORow(i)} sx={{ color: "error.main", mt: 0.5 }}>

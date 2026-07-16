@@ -83,7 +83,7 @@ export default function Alignment() {
 
         <Stack direction="row" spacing={1.5}>
           <Button variant="outlined" color="inherit" startIcon={<UploadIcon fontSize="small" />} onClick={() => { setImportStep("upload"); setImportOpen(true); }}>
-            Import Excel
+            Import
           </Button>
           <Button
             variant="outlined" color="inherit" onClick={e => setDeptAnchor(e.currentTarget)}

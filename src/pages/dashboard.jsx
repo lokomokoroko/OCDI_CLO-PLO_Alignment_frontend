@@ -288,11 +288,62 @@ export default function Dashboard() {
                         {aligned} / {total} CLOs
                       </Typography>
                     </Stack>
+                    
                   );
                 })}
               </Stack>
+              {selectedProgram?.plos?.length > 0 && (
+  <Stack
+    spacing={1.5}
+    sx={{
+      mt: 3,
+      pt: 2.5,
+      borderTop: "1px solid",
+      borderColor: "grey.100",
+      width: "100%",
+    }}
+  >
+    {selectedProgram.plos.map((plo) => (
+      <Stack
+        key={plo.code}
+        direction="row"
+      >
+        {/* PLO Number */}
+        <Box
+          sx={{
+            width: 100,
+            display: "flex",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          <Typography
+            variant="caption"
+            fontWeight={700}
+            color="primary.main"
+            sx={{ fontFamily: "monospace" }}
+          >
+            {plo.code}
+          </Typography>
+        </Box>
+
+        {/* Description */}
+        <Box sx={{ flex: 1 }}>
+          <Typography
+            variant="body2"
+            color="grey.600"
+            sx={{ lineHeight: 1.5 }}
+          >
+            {plo.desc}
+          </Typography>
+        </Box>
+      </Stack>
+    ))}
+  </Stack>
+)}
             </Box>
           )}
+          
 
           {activeTab === "radar" && (
             <Box>
@@ -379,9 +430,39 @@ export default function Dashboard() {
                     {ksaData[selectedCode].map((entry, i) => <Cell key={i} fill={entry.color} />)}
                   </Pie>
                   <Tooltip formatter={v => [`${v}%`, ""]} contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} />
-                  <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />
                 </PieChart>
               </ResponsiveContainer>
+              <Stack
+                direction="row"
+                justifyContent="center"
+                spacing={3}
+                sx={{ mt: 2 }}
+              >
+                {[
+                  { label: "Knowledge", color: "#6366f1" },
+                  { label: "Skills", color: "#22c55e" },
+                  { label: "Attitude", color: "#f97316" },
+                ].map((item) => (
+                  <Stack
+                    key={item.label}
+                    direction="row"
+                    spacing={0.75}
+                    alignItems="center"
+                  >
+                    <Box
+                      sx={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: "50%",
+                        bgcolor: item.color,
+                      }}
+                    />
+                    <Typography variant="caption">
+                      {item.label}
+                    </Typography>
+                  </Stack>
+                ))}
+              </Stack>
             </Box>
           )}
 
@@ -410,15 +491,39 @@ export default function Dashboard() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                   <XAxis dataKey="year" tick={{ fontSize: 12, fill: "#64748b" }} axisLine={false} tickLine={false} />
                   <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} />
-                  <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
-                  {Object.keys(bloomColors).map(level => (
+                  <Tooltip
+                    itemSorter={(item) => {
+                      const order = {
+                        Remember: 0,
+                        Understand: 1,
+                        Apply: 2,
+                        Analyze: 3,
+                        Evaluate: 4,
+                        Create: 5,
+                      };
+
+                      return order[item.dataKey];
+                    }}
+                    contentStyle={{
+                      borderRadius: 8,
+                      border: "1px solid #e2e8f0",
+                      fontSize: 12,
+                    }}
+                  />
+                  {[
+                    "Create",
+                    "Evaluate",
+                    "Analyze",
+                    "Apply",
+                    "Understand",
+                    "Remember",
+                  ].map(level => (
                     <Bar
                       key={level}
                       dataKey={level}
                       stackId="bloom"
                       fill={bloomColors[level]}
-                      radius={level === "Create" ? [3, 3, 0, 0] : [0, 0, 0, 0]}
+                      radius={level === "Remember" ? [3, 3, 0, 0] : [0, 0, 0, 0]}
                     >
                       <LabelList
                         dataKey={level}
@@ -430,12 +535,47 @@ export default function Dashboard() {
                       />
                     </Bar>
                   ))}
+                  ))}
                 </BarChart>
               </ResponsiveContainer>
-            </Box>
-          )}
-        </Box>
-      </Paper>
-    </Box>
-  );
-}
+              <Stack
+                direction="row"
+                justifyContent="center"
+                spacing={3}
+                sx={{ mt: 2, flexWrap: "wrap" }}
+              >
+                {[
+                  { label: "Remember", color: bloomColors.Remember },
+                  { label: "Understand", color: bloomColors.Understand },
+                  { label: "Apply", color: bloomColors.Apply },
+                  { label: "Analyze", color: bloomColors.Analyze },
+                  { label: "Evaluate", color: bloomColors.Evaluate },
+                  { label: "Create", color: bloomColors.Create },
+                ].map((item) => (
+                  <Stack
+                    key={item.label}
+                    direction="row"
+                    spacing={0.75}
+                    alignItems="center"
+                  >
+                    <Box
+                      sx={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: "50%",
+                        bgcolor: item.color,
+                      }}
+                    />
+                    <Typography variant="caption">
+                      {item.label}
+                    </Typography>
+                  </Stack>
+                ))}
+              </Stack>
+                          </Box>
+                        )}
+                      </Box>
+                    </Paper>
+                  </Box>
+                );
+              }
