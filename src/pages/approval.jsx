@@ -9,6 +9,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import DescriptionIcon from "@mui/icons-material/Description";
 import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
 import { approvalItems as initialItems, programs as allPrograms } from "../data";
+import { StatusBadge } from "../components/StatusBadge";
 import { Modal } from "../components/Modal";
 
 export default function Approval() {
@@ -164,6 +165,8 @@ export default function Approval() {
                 </Typography>
               </Box>
 
+              <StatusBadge status={item.status} />
+
               {idx === 0 && (
                 <Button
                   size="small" onClick={() => { setReviewing(item); setComment(""); }}
@@ -190,6 +193,7 @@ export default function Approval() {
                 <Paper key={id} elevation={0} variant="outlined" sx={{ borderRadius: 2.5, px: 2.5, py: 1.5, display: "flex", alignItems: "center", gap: 2, opacity: 0.6 }}>
                   <Typography variant="body2" color="grey.600" sx={{ flex: 1 }}>{original.name}</Typography>
                   <Typography variant="caption" color="grey.400">{original.courseCode} · {original.programCode}</Typography>
+                  <StatusBadge status={action} />
                 </Paper>
               );
             })}
@@ -202,6 +206,7 @@ export default function Approval() {
           <Stack spacing={2.5}>
             <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
               <Chip label="Course" size="small" sx={{ bgcolor: "#fff7ed", color: "#ea580c", fontWeight: 600, fontSize: 11 }} />
+              <StatusBadge status={reviewing.status} />
               <Typography variant="caption" color="grey.400">
                 Submitted by <Box component="span" fontWeight={600} color="grey.600">{reviewing.submittedBy}</Box> on {reviewing.date}
               </Typography>

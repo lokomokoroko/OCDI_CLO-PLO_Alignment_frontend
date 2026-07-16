@@ -6,6 +6,7 @@ import {
 import AddIcon from "@mui/icons-material/Add";
 import UploadIcon from "@mui/icons-material/Upload";
 import DownloadIcon from "@mui/icons-material/Download";
+import HistoryIcon from "@mui/icons-material/History";
 import EditIcon from "@mui/icons-material/Edit";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
@@ -13,7 +14,14 @@ import CheckIcon from "@mui/icons-material/Check";
 import ScheduleIcon from "@mui/icons-material/Schedule";
 import CloseIcon from "@mui/icons-material/Close";
 import { programs as initialData, schools, departments, fourCOptions } from "../data";
+import { StatusBadge } from "../components/StatusBadge";
 import { Modal, Field, SelectField, ModalActions } from "../components/Modal";
+
+const programHistory = [
+  { version: "v3 (current)", date: "2026-06-15", author: " Sir Maguyon", note: "Added PLO6 — Teamwork and Collaboration." },
+  { version: "v2",           date: "2026-03-10", author: "Sir De Vera",   note: "Revised PLO3 description to align with CHED memo." },
+  { version: "v1",           date: "2025-09-01", author: "Sir Barot", note: "Initial program setup with 5 PLOs." },
+];
 
 export default function Programs() {
   const [data, setData] = useState(initialData);
@@ -44,6 +52,11 @@ export default function Programs() {
     setSelected(p);
     setForm({ name: p.name, code: p.code, dept: p.dept, school: p.school, desc: p.desc, plos: p.plos.map(pl => ({ ...pl })) });
     setModal("edit");
+  }
+
+  function openHistory(p) {
+    setSelected(p);
+    setModal("history");
   }
 
   function handleExport(p) {
@@ -155,17 +168,19 @@ export default function Programs() {
 
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
-                  <Typography variant="body2" fontWeight={600} color="grey.800">{p.code}</Typography>
-                  <Chip label={p.name} size="small" sx={{ fontFamily: "monospace", bgcolor: "grey.100", color: "grey.500", fontSize: 11, height: 20 }} />
+                  <Typography variant="body2" fontWeight={600} color="grey.800">{p.name}</Typography>
+                  <Chip label={p.code} size="small" sx={{ fontFamily: "monospace", bgcolor: "grey.100", color: "grey.500", fontSize: 11, height: 20 }} />
+                  <StatusBadge status={p.status} />
                 </Stack>
                 <Typography variant="caption" color="grey.500" sx={{ mt: 0.25, display: "block" }}>
-                  {p.school} · {p.dept} · v{p.versionYear} · {p.plos.length} PLOs
+                  {p.school} · {p.dept} · {p.plos.length} PLOs
                 </Typography>
               </Box>
 
               <Stack direction="row" spacing={0.5}>
                 <ActionBtn icon={EditIcon} label="Edit" onClick={() => openEdit(p)} />
                 <ActionBtn icon={DownloadIcon} label="Export" onClick={() => handleExport(p)} />
+                <ActionBtn icon={HistoryIcon} label="History" onClick={() => openHistory(p)} />
               </Stack>
             </Stack>
 
@@ -209,27 +224,10 @@ export default function Programs() {
           wide
         >
           <Stack spacing={2.5}>
-            {/* PROGRAM NAME + CODE */}
-            <Grid container spacing={1.5}>
-              <Grid size={3}>
-                <Field
-                  label="Program Code"
-                  value={form.code}
-                  onChange={v => setForm(f => ({ ...f, code: v }))}
-                />
-              </Grid>
-              <Grid size={9}>
-                <Field
-                  label="Program Title"
-                  value={form.name}
-                  onChange={v => setForm(f => ({ ...f, name: v }))}
-                />
-              </Grid>
-            </Grid>
 
-            {/* SCHOOL + DEPARTMENT + VYEAR */}
+            {/* SCHOOL + DEPARTMENT */}
             <Grid container spacing={1.5}>
-              <Grid size={4}>
+              <Grid size={6}>
                 <SelectField
                   label="School"
                   value={form.school}
@@ -239,7 +237,7 @@ export default function Programs() {
                 />
               </Grid>
 
-              <Grid size={4}>
+              <Grid size={6}>
                 <SelectField
                   label="Department"
                   value={form.dept}
@@ -248,15 +246,28 @@ export default function Programs() {
                   fullWidth
                 />
               </Grid>
-              <Grid size={4}>
-                <TextField
-                label="Version Year"
-                fullWidth
-                value={form.versionYear}
-                onChange={(e) => setForm(f => ({...f, versionYear: e.target.value,}))}
-              />
             </Grid>
+
+
+            {/* PROGRAM NAME + CODE */}
+            <Grid container spacing={1.5}>
+              <Grid size={9}>
+                <Field
+                  label="Program Name"
+                  value={form.name}
+                  onChange={v => setForm(f => ({ ...f, name: v }))}
+                />
+              </Grid>
+
+              <Grid size={3}>
+                <Field
+                  label="Program Code"
+                  value={form.code}
+                  onChange={v => setForm(f => ({ ...f, code: v }))}
+                />
+              </Grid>
             </Grid>
+
 
             {/* DESCRIPTION */}
           <Box sx={{ width: "100%" }}>
@@ -359,7 +370,7 @@ export default function Programs() {
                           multiline
                           rows={2}
                           fullWidth
-                          label="PLO description"
+                          placeholder="PLO description"
                           onChange={e =>
                             setForm(f => {
                               const plos = [...f.plos];
@@ -377,7 +388,7 @@ export default function Programs() {
                           value={plo.keyword ?? ""}
                           size="small"
                           fullWidth
-                          label="Main keyword of PLO"
+                          placeholder="Main keyword of PLO"
                           onChange={e =>
                             setForm(f => {
                               const plos = [...f.plos];
@@ -534,6 +545,28 @@ export default function Programs() {
               <ModalActions onCancel={() => setImportStep("upload")} onConfirm={() => setModal(null)} confirmLabel="Confirm Import" />
             </Stack>
           )}
+        </Modal>
+      )}
+
+      {modal === "history" && selected && (
+        <Modal title={`History — ${selected.name}`} onClose={() => setModal(null)}>
+          <Stack spacing={0}>
+            {programHistory.map((h, i) => (
+              <Stack key={i} direction="row" spacing={1.5}>
+                <Stack alignItems="center">
+                  <Avatar sx={{ width: 28, height: 28, bgcolor: i === 0 ? "#eef2ff" : "grey.100" }}>
+                    {i === 0 ? <CheckIcon sx={{ fontSize: 13, color: "primary.main" }} /> : <ScheduleIcon sx={{ fontSize: 13, color: "grey.400" }} />}
+                  </Avatar>
+                  {i < programHistory.length - 1 && <Box sx={{ width: "1px", flex: 1, bgcolor: "grey.200", mt: 0.5 }} />}
+                </Stack>
+                <Box sx={{ pb: 2.5 }}>
+                  <Typography variant="body2" fontWeight={600} color="grey.800">{h.version}</Typography>
+                  <Typography variant="caption" color="grey.400" sx={{ display: "block", mt: 0.25 }}>{h.date} · {h.author}</Typography>
+                  <Typography variant="body2" color="grey.600" sx={{ mt: 0.5 }}>{h.note}</Typography>
+                </Box>
+              </Stack>
+            ))}
+          </Stack>
         </Modal>
       )}
     </Box>
