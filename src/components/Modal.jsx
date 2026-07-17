@@ -66,9 +66,9 @@ export function SelectField({ label, value, onChange, options }) {
       }}
     >
       <MenuItem value="">Select…</MenuItem>
-      {options.map(o => (
-        <MenuItem key={o} value={o}>
-          {o}
+      {options.map((o) => (
+        <MenuItem key={o.value} value={o.value}>
+          {o.label}
         </MenuItem>
       ))}
     </TextField>

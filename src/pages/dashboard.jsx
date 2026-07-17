@@ -1,8 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
-  Box, Typography, Grid, Paper, Stack, Menu, MenuItem, Button, Tabs, Tab, LinearProgress,
+  Box, Typography, Paper, Stack, Menu, MenuItem, Button, Tabs, Tab, LinearProgress, CircularProgress,
 } from "@mui/material";
-import DashboardIcon from "@mui/icons-material/SpaceDashboard";
 import SchoolIcon from "@mui/icons-material/School";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import HubIcon from "@mui/icons-material/Hub";
@@ -13,122 +12,15 @@ import {
   PieChart, Pie, Cell, Tooltip, Legend,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   RadialBarChart, RadialBar,
-  ResponsiveContainer, LabelList, 
+  ResponsiveContainer, LabelList,
 } from "recharts";
-import { programs as programsData, courses as coursesData } from "../data";
+import api from "../api";
 
-const ploData = {
-  "BS CS": [
-    { plo: "PLO1", aligned: 25, total: 25, color: "#6366f1" },
-    { plo: "PLO2", aligned: 25, total: 25, color: "#f97316" },
-    { plo: "PLO3", aligned: 12, total: 25, color: "#22c55e" },
-    { plo: "PLO4", aligned: 11, total: 25, color: "#a855f7" },
-    { plo: "PLO5", aligned: 12, total: 25, color: "#ef4444" },
-    { plo: "PLO6", aligned: 18, total: 25, color: "#eab308" },
-  ],
-  "BS MIS": [
-    { plo: "PLO1", aligned: 20, total: 30, color: "#6366f1" },
-    { plo: "PLO2", aligned: 28, total: 30, color: "#f97316" },
-    { plo: "PLO3", aligned: 15, total: 30, color: "#22c55e" },
-    { plo: "PLO4", aligned: 9,  total: 30, color: "#a855f7" },
-    { plo: "PLO5", aligned: 22, total: 30, color: "#ef4444" },
-  ],
-  "AB DS": [
-    { plo: "PLO1", aligned: 18, total: 20, color: "#6366f1" },
-    { plo: "PLO2", aligned: 14, total: 20, color: "#f97316" },
-    { plo: "PLO3", aligned: 20, total: 20, color: "#22c55e" },
-    { plo: "PLO4", aligned: 10, total: 20, color: "#a855f7" },
-  ],
-};
-
-const radarData = {
-  "BS CS": [
-    { plo: "PLO1", value: 92 }, { plo: "PLO2", value: 88 },
-    { plo: "PLO3", value: 55 }, { plo: "PLO4", value: 60 },
-    { plo: "PLO5", value: 45 }, { plo: "PLO6", value: 72 },
-  ],
-  "BS MIS": [
-    { plo: "PLO1", value: 80 }, { plo: "PLO2", value: 85 },
-    { plo: "PLO3", value: 60 }, { plo: "PLO4", value: 50 },
-    { plo: "PLO5", value: 70 },
-  ],
-  "AB DS": [
-    { plo: "PLO1", value: 90 }, { plo: "PLO2", value: 75 },
-    { plo: "PLO3", value: 65 }, { plo: "PLO4", value: 55 },
-  ],
-};
-
-const ksaData = {
-  "BS CS": [
-    { name: "Knowledge", value: 32, color: "#6366f1" },
-    { name: "Skills",    value: 48, color: "#22c55e" },
-    { name: "Attitude",  value: 20, color: "#f97316" },
-  ],
-  "BS MIS": [
-    { name: "Knowledge", value: 28, color: "#6366f1" },
-    { name: "Skills",    value: 52, color: "#22c55e" },
-    { name: "Attitude",  value: 20, color: "#f97316" },
-  ],
-  "AB DS": [
-    { name: "Knowledge", value: 40, color: "#6366f1" },
-    { name: "Skills",    value: 42, color: "#22c55e" },
-    { name: "Attitude",  value: 18, color: "#f97316" },
-  ],
-};
-
-const fourCsData = {
-  "BS CS": [
-    { name: "Commitment",    value: 42, fill: "#a855f7" },
-    { name: "Character",     value: 58, fill: "#f97316" },
-    { name: "Communication", value: 65, fill: "#22c55e" },
-    { name: "Competence",    value: 85, fill: "#6366f1" },
-  ],
-  "BS MIS": [
-    { name: "Commitment",    value: 50, fill: "#a855f7" },
-    { name: "Character",     value: 55, fill: "#f97316" },
-    { name: "Communication", value: 60, fill: "#22c55e" },
-    { name: "Competence",    value: 80, fill: "#6366f1" },
-  ],
-  "AB DS": [
-    { name: "Commitment",    value: 38, fill: "#a855f7" },
-    { name: "Character",     value: 62, fill: "#f97316" },
-    { name: "Communication", value: 70, fill: "#22c55e" },
-    { name: "Competence",    value: 88, fill: "#6366f1" },
-  ],
-};
-
-const bloomsData = {
-  "BS CS": [
-    { year: "Year 1", Remember: 20, Understand: 30, Apply: 25, Analyze: 15, Evaluate: 5,  Create: 5  },
-    { year: "Year 2", Remember: 10, Understand: 20, Apply: 30, Analyze: 25, Evaluate: 10, Create: 5  },
-    { year: "Year 3", Remember: 5,  Understand: 10, Apply: 25, Analyze: 30, Evaluate: 20, Create: 10 },
-    { year: "Year 4", Remember: 3,  Understand: 7,  Apply: 20, Analyze: 25, Evaluate: 25, Create: 20 },
-  ],
-  "BS MIS": [
-    { year: "Year 1", Remember: 25, Understand: 35, Apply: 20, Analyze: 12, Evaluate: 5,  Create: 3  },
-    { year: "Year 2", Remember: 12, Understand: 22, Apply: 35, Analyze: 20, Evaluate: 8,  Create: 3  },
-    { year: "Year 3", Remember: 6,  Understand: 12, Apply: 30, Analyze: 28, Evaluate: 15, Create: 9  },
-    { year: "Year 4", Remember: 4,  Understand: 8,  Apply: 22, Analyze: 26, Evaluate: 22, Create: 18 },
-  ],
-  "AB DS": [
-    { year: "Year 1", Remember: 18, Understand: 28, Apply: 22, Analyze: 18, Evaluate: 8,  Create: 6  },
-    { year: "Year 2", Remember: 8,  Understand: 18, Apply: 28, Analyze: 28, Evaluate: 12, Create: 6  },
-    { year: "Year 3", Remember: 4,  Understand: 8,  Apply: 22, Analyze: 32, Evaluate: 22, Create: 12 },
-    { year: "Year 4", Remember: 2,  Understand: 5,  Apply: 18, Analyze: 28, Evaluate: 28, Create: 19 },
-  ],
-};
-
-const bloomColors = {
-  Remember:   "#94a3b8",
-  Understand: "#60a5fa",
-  Apply:      "#6366f1",
-  Analyze:    "#a855f7",
-  Evaluate:   "#f59e0b",
-  Create:     "#22c55e",
-};
-
-const totalAlignments = Object.values(ploData).flat().reduce((sum, r) => sum + r.aligned, 0);
-const totalPLOs = programsData.reduce((sum, p) => sum + p.plos.length, 0);
+const PLO_COLORS = ["#6366f1", "#f97316", "#22c55e", "#a855f7", "#ef4444", "#eab308", "#0ea5e9", "#ec4899"];
+const KSA_COLORS = { KNOWLEDGE: "#6366f1", SKILLS: "#22c55e", ATTITUDE: "#f97316" };
+const FOUR_C_LABELS = { CONSCIENCE: "Conscience", COMPETENCE: "Competence", COMPASSION: "Compassion", COMMITMENT: "Commitment" };
+const FOUR_C_COLORS = { CONSCIENCE: "#f97316", COMPETENCE: "#6366f1", COMPASSION: "#22c55e", COMMITMENT: "#a855f7" };
+const BLOOM_ORDER = ["REMEMBER", "UNDERSTAND", "APPLY", "ANALYZE", "EVALUATE", "CREATE"];
 
 const tabs = [
   { key: "clos",   label: "CLOs per PLO" },
@@ -138,26 +30,132 @@ const tabs = [
   { key: "blooms", label: "Bloom's Taxonomy" },
 ];
 
-const statCards = [
-  { icon: SchoolIcon,    label: "Programs",     key: "programs",   bg: "#eef2ff", color: "#6366f1" },
-  { icon: MenuBookIcon,  label: "Courses",      key: "courses",    bg: "#fff7ed", color: "#fb923c" },
-  { icon: FactCheckIcon, label: "PLOs Defined", key: "plos",       bg: "#f0fdf4", color: "#22c55e" },
-  { icon: HubIcon, label: "Alignments",   key: "alignments", bg: "#fff1f2", color: "#fb7185" },
+const statMeta = [
+  { key: "program_count",   icon: SchoolIcon,    label: "Programs",     bg: "#eef2ff", color: "#6366f1" },
+  { key: "course_count",    icon: MenuBookIcon,  label: "Courses",      bg: "#fff7ed", color: "#fb923c" },
+  { key: "plo_count",       icon: FactCheckIcon, label: "PLOs Defined", bg: "#f0fdf4", color: "#22c55e" },
+  { key: "alignment_count", icon: HubIcon,       label: "Alignments",   bg: "#fff1f2", color: "#fb7185" },
 ];
-const statValues = {
-  programs: programsData.length,
-  courses: coursesData.length,
-  plos: totalPLOs,
-  alignments: totalAlignments,
+
+const bloomColors = {
+  REMEMBER: "#94a3b8",
+  UNDERSTAND: "#3b82f6",
+  APPLY: "#6366f1",
+  ANALYZE: "#8b5cf6",
+  EVALUATE: "#f59e0b",
+  CREATE: "#22c55e",
 };
 
+const bloomLabel = (level) => ({
+  REMEMBER: "Remember",
+  UNDERSTAND: "Understand",
+  APPLY: "Apply",
+  ANALYZE: "Analyze",
+  EVALUATE: "Evaluate",
+  CREATE: "Create",
+}[level] || level);
+
 export default function Dashboard() {
-  const [selectedCode, setSelectedCode] = useState("BS CS");
+  const [programs, setPrograms] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
   const [anchorEl, setAnchorEl] = useState(null);
   const [activeTab, setActiveTab] = useState("clos");
+  const [overview, setOverview] = useState({ program_count: 0, course_count: 0, plo_count: 0, alignment_count: 0 });
 
-  const rows = ploData[selectedCode] ?? [];
-  const selectedProgram = programsData.find(p => p.code === selectedCode);
+  const [cloRows, setCloRows] = useState([]);
+  const [radarRows, setRadarRows] = useState([]);
+  const [ksaRows, setKsaRows] = useState([]);
+  const [fourCsRows, setFourCsRows] = useState({});
+  const [bloomsRows, setBloomsRows] = useState({});
+
+  const [loadingPrograms, setLoadingPrograms] = useState(true);
+  const [loadingCharts, setLoadingCharts] = useState(false);
+  const [error, setError] = useState("");
+
+  // Programs list (for the selector + nested PLOs) and the overview
+  // counters — both from apps.programs.views.ProgramViewSet.
+  useEffect(() => {
+    setLoadingPrograms(true);
+    Promise.all([
+      api.get("programs/"),
+      api.get("programs/overview/"),
+    ])
+      .then(([programsRes, overviewRes]) => {
+        setPrograms(programsRes.data);
+        setOverview(overviewRes.data);
+        if (programsRes.data.length > 0) setSelectedId(programsRes.data[0].id);
+      })
+      .catch(() => setError("Could not load dashboard data. Is the API running?"))
+      .finally(() => setLoadingPrograms(false));
+  }, []);
+
+  // Per-program analytics actions on ProgramViewSet.
+  useEffect(() => {
+    if (!selectedId) return;
+    setLoadingCharts(true);
+    Promise.all([
+      api.get(`programs/${selectedId}/clos-per-plo/`),
+      api.get(`programs/${selectedId}/alignment-radar/`),
+      api.get(`programs/${selectedId}/ksa-distribution/`),
+      api.get(`programs/${selectedId}/4cs-profile/`),
+      api.get(`programs/${selectedId}/blooms-distribution/`),
+    ])
+      .then(([clos, radar, ksa, fourCs, blooms]) => {
+        setCloRows(clos.data);
+        setRadarRows(radar.data);
+        setKsaRows(ksa.data);
+        setFourCsRows(fourCs.data);
+        setBloomsRows(blooms.data);
+      })
+      .catch(() => setError("Could not load chart data for this program."))
+      .finally(() => setLoadingCharts(false));
+  }, [selectedId]);
+
+  const selectedProgram = programs.find(p => p.id === selectedId);
+  const courseCount = selectedProgram?.course_count ?? 0;
+
+  const cloChartRows = useMemo(
+    () => cloRows.map((r, i) => ({ ...r, color: PLO_COLORS[i % PLO_COLORS.length] })),
+    [cloRows]
+  );
+
+  const radarChartData = useMemo(
+    () => radarRows.map(r => ({ plo: r.plo_code, value: r.percentage })),
+    [radarRows]
+  );
+
+  const ksaChartData = useMemo(
+    () => ksaRows.map(r => ({
+      name: r.clo_domain === "KNOWLEDGE" ? "Knowledge" : r.clo_domain === "SKILLS" ? "Skills" : "Attitude",
+      value: r.count,
+      color: KSA_COLORS[r.clo_domain] ?? "#94a3b8",
+    })),
+    [ksaRows]
+  );
+
+  const fourCsChartData = useMemo(() => (
+    Object.entries(fourCsRows).map(([key, count]) => ({
+      name: FOUR_C_LABELS[key] ?? key,
+      value: courseCount > 0 ? Math.round((count / courseCount) * 1000) / 10 : 0,
+      fill: FOUR_C_COLORS[key] ?? "#94a3b8",
+    }))
+  ), [fourCsRows, courseCount]);
+
+  const bloomsChartData = useMemo(() => (
+    Object.entries(bloomsRows)
+      .sort(([a], [b]) => Number(a) - Number(b))
+      .map(([year, counts]) => {
+        const total = Object.values(counts).reduce((s, v) => s + v, 0);
+        const row = { year: `Year ${year}` };
+        BLOOM_ORDER.forEach(level => {
+          const count = counts[level] ?? 0;
+          row[level] = total > 0 ? Math.round((count / total) * 1000) / 10 : 0;
+        });
+        return row;
+      })
+  ), [bloomsRows]);
+
+  const statCards = statMeta.map(m => ({ ...m, value: overview[m.key] ?? 0 }));
 
   return (
     <Box sx={{ p: 4 }}>
@@ -166,56 +164,56 @@ export default function Dashboard() {
         Overview of curriculum alignment data
       </Typography>
 
-      <Box
-  sx={{
-    display: "flex",
-    gap: 2,
-    mb: 3.5,
-    width: "100%",
-  }}
->
-  {statCards.map(({ icon: Icon, label, key, bg, color }) => (
-    <Paper
-      elevation={0}
-      variant="outlined"
-      sx={{
-        flex: 1,
-        height: 90,
-        borderRadius: 3,
-        px: 3,
-        py: 2,
-        display: "flex",
-        alignItems: "center",
-        gap: 2,
-      }}
-    >
-      <Box
-        sx={{
-          width: 48,
-          height: 48,
-          borderRadius: 2.5,
-          bgcolor: bg,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
-        }}
-      >
-        <Icon sx={{ fontSize: 22, color }} />
-      </Box>
+      {error && (
+        <Paper elevation={0} variant="outlined" sx={{ borderRadius: 3, p: 2, mb: 2.5, borderColor: "error.light", bgcolor: "error.light" }}>
+          <Typography variant="body2" color="error.main">{error}</Typography>
+        </Paper>
+      )}
 
-      <Box>
-        <Typography variant="h6" fontWeight={700} color="grey.800">
-          {statValues[key]}
-        </Typography>
+      <Box sx={{ display: "flex", gap: 2, mb: 3.5, width: "100%" }}>
+        {statCards.map(({ icon: Icon, label, value, bg, color, key }) => (
+          <Paper
+            key={key}
+            elevation={0}
+            variant="outlined"
+            sx={{
+              flex: 1,
+              height: 90,
+              borderRadius: 3,
+              px: 3,
+              py: 2,
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+            }}
+          >
+            <Box
+              sx={{
+                width: 48,
+                height: 48,
+                borderRadius: 2.5,
+                bgcolor: bg,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Icon sx={{ fontSize: 22, color }} />
+            </Box>
 
-        <Typography variant="body2" color="grey.500">
-          {label}
-        </Typography>
+            <Box>
+              <Typography variant="h6" fontWeight={700} color="grey.800">
+                {value}
+              </Typography>
+
+              <Typography variant="body2" color="grey.500">
+                {label}
+              </Typography>
+            </Box>
+          </Paper>
+        ))}
       </Box>
-    </Paper>
-  ))}
-</Box>
 
       <Paper elevation={0} variant="outlined" sx={{ borderRadius: 3, overflow: "hidden" }}>
         <Box sx={{ px: 3, pt: 2.5, pb: 2, borderBottom: "1px solid", borderColor: "grey.100" }}>
@@ -228,18 +226,19 @@ export default function Dashboard() {
             variant="outlined"
             color="inherit"
             endIcon={<ExpandMoreIcon sx={{ color: "grey.400" }} />}
+            disabled={loadingPrograms || programs.length === 0}
             sx={{ justifyContent: "space-between", py: 1.25, px: 2, fontWeight: 500, color: "grey.800", borderColor: "grey.200" }}
           >
-            {selectedProgram?.name ?? selectedCode}
+            {selectedProgram?.program_name ?? (loadingPrograms ? "Loading programs…" : "No programs available")}
           </Button>
           <Menu anchorEl={anchorEl} open={!!anchorEl} onClose={() => setAnchorEl(null)} PaperProps={{ sx: { width: anchorEl?.offsetWidth, mt: 0.5 } }}>
-            {programsData.map(p => (
+            {programs.map(p => (
               <MenuItem
-                key={p.code}
-                selected={p.code === selectedCode}
-                onClick={() => { setSelectedCode(p.code); setAnchorEl(null); }}
+                key={p.id}
+                selected={p.id === selectedId}
+                onClick={() => { setSelectedId(p.id); setAnchorEl(null); }}
               >
-                {p.name}
+                {p.program_name}
               </MenuItem>
             ))}
           </Menu>
@@ -258,324 +257,248 @@ export default function Dashboard() {
         </Box>
 
         <Box sx={{ p: 3 }}>
-          {activeTab === "clos" && (
-            <Box>
-              <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 2.5, px: 0.5 }}>
-                <Typography variant="caption" color="grey.400" fontWeight={500} sx={{ width: 64}}>PLOs</Typography>
-                <Typography variant="caption" color="grey.400" fontWeight={500} sx={{ flex: 1}}>Progress</Typography>
-                <Typography variant="caption" color="grey.400" fontWeight={500} sx={{ width: 128, textAlign: "center" }}>
-                  CLOs Aligned
-                </Typography>
-              </Stack>
-              <Stack spacing={2}>
-                {rows.map(({ plo, aligned, total, color }) => {
-                  const pct = Math.round((aligned / total) * 100);
-                  return (
-                    <Stack key={plo} direction="row" alignItems="center" spacing={1.5} sx={{ mb: 3.0  , px: 0.5 }}>
-                      <Stack direction="row" alignItems="center" spacing={1} sx={{ width: 64, flexShrink: 0 }}>
-                        <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: color, flexShrink: 0 }} />
-                        <Typography variant="body2" fontWeight={500} color="grey.700">{plo}</Typography>
+          {loadingCharts ? (
+            <Stack alignItems="center" sx={{ py: 6 }}>
+              <CircularProgress size={28} />
+            </Stack>
+          ) : !selectedProgram ? (
+            <Typography variant="body2" color="grey.400" align="center" sx={{ py: 4 }}>
+              No program selected.
+            </Typography>
+          ) : (
+            <>
+              {activeTab === "clos" && (
+                <Box>
+                  <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 2.5, px: 0.5 }}>
+                    <Typography variant="caption" color="grey.400" fontWeight={500} sx={{ width: 64}}>PLOs</Typography>
+                    <Typography variant="caption" color="grey.400" fontWeight={500} sx={{ flex: 1}}>Progress</Typography>
+                    <Typography variant="caption" color="grey.400" fontWeight={500} sx={{ width: 128, textAlign: "center" }}>
+                      CLOs Aligned
+                    </Typography>
+                  </Stack>
+                  <Stack spacing={2}>
+                    {cloChartRows.map(({ plo_code, aligned_clos, total_clos, color }) => {
+                      const pct = total_clos > 0 ? Math.round((aligned_clos / total_clos) * 100) : 0;
+                      return (
+                        <Stack key={plo_code} direction="row" alignItems="center" spacing={1.5} sx={{ mb: 3.0, px: 0.5 }}>
+                          <Stack direction="row" alignItems="center" spacing={1} sx={{ width: 64, flexShrink: 0 }}>
+                            <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: color, flexShrink: 0 }} />
+                            <Typography variant="body2" fontWeight={500} color="grey.700">{plo_code}</Typography>
+                          </Stack>
+                          <LinearProgress
+                            variant="determinate"
+                            value={pct}
+                            sx={{
+                              flex: 1, height: 12, borderRadius: 6, bgcolor: "grey.100",
+                              "& .MuiLinearProgress-bar": { bgcolor: color, borderRadius: 6 },
+                            }}
+                          />
+                          <Typography variant="body2" color="grey.500" sx={{ width: 128, textAlign: "center", flexShrink: 0 }}>
+                            {aligned_clos} / {total_clos} CLOs
+                          </Typography>
+                        </Stack>
+                      );
+                    })}
+                    {cloChartRows.length === 0 && (
+                      <Typography variant="body2" color="grey.400" align="center">
+                        No approved PLOs for this program yet.
+                      </Typography>
+                    )}
+                  </Stack>
+                  {selectedProgram?.plos?.length > 0 && (
+                    <Stack
+                      spacing={1.5}
+                      sx={{ mt: 3, pt: 2.5, borderTop: "1px solid", borderColor: "grey.100", width: "100%" }}
+                    >
+                      {selectedProgram.plos.map((plo) => (
+                        <Stack key={plo.plo_code} direction="row">
+                          <Box sx={{ width: 100, display: "flex", justifyContent: "center", flexShrink: 0 }}>
+                            <Typography variant="caption" fontWeight={700} color="primary.main" sx={{ fontFamily: "monospace" }}>
+                              {plo.plo_code}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ flex: 1 }}>
+                            <Typography variant="body2" color="grey.600" sx={{ lineHeight: 1.5 }}>
+                              {plo.plo_description}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      ))}
+                    </Stack>
+                  )}
+                </Box>
+              )}
+
+              {activeTab === "radar" && (
+                <Box>
+                  <Typography variant="caption" color="grey.400" sx={{ mb: 2, display: "block" }}>
+                    PLO coverage across all courses
+                  </Typography>
+                  <ResponsiveContainer width="100%" height={320}>
+                    <RadarChart data={radarChartData} outerRadius="75%">
+                      <PolarGrid stroke="#e2e8f0" />
+                      <PolarAngleAxis dataKey="plo" tick={{ fontSize: 12, fill: "#64748b" }} />
+                      <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 10, fill: "#94a3b8" }} />
+                      <Radar dataKey="value" stroke="#6366f1" fill="#6366f1" fillOpacity={0.25} strokeWidth={2} />
+                      <Tooltip formatter={v => [`${v}%`, "Coverage"]} contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                  {selectedProgram?.plos?.length > 0 && (
+                    <Stack
+                      spacing={1.5}
+                      sx={{ mt: 3, pt: 2.5, borderTop: "1px solid", borderColor: "grey.100", width: "100%" }}
+                    >
+                      {selectedProgram.plos.map((plo) => (
+                        <Stack key={plo.plo_code} direction="row">
+                          <Box sx={{ width: 100, display: "flex", justifyContent: "center", flexShrink: 0 }}>
+                            <Typography variant="caption" fontWeight={700} color="primary.main" sx={{ fontFamily: "monospace" }}>
+                              {plo.plo_code}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ flex: 1 }}>
+                            <Typography variant="body2" color="grey.600" sx={{ lineHeight: 1.5 }}>
+                              {plo.plo_description}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      ))}
+                    </Stack>
+                  )}
+                </Box>
+              )}
+
+              {activeTab === "ksa" && (
+                <Box>
+                  <Typography variant="caption" color="grey.400" sx={{ mb: 2, display: "block" }}>
+                    Distribution of CLOs by Knowledge, Skills, and Attitude
+                  </Typography>
+                  <ResponsiveContainer width="100%" height={320}>
+                    <PieChart>
+                      <Pie data={ksaChartData} cx="50%" cy="50%" innerRadius={70} outerRadius={120} paddingAngle={3} dataKey="value">
+                        {ksaChartData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                      </Pie>
+                      <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <Stack
+                    direction="row"
+                    justifyContent="center"
+                    spacing={3}
+                    sx={{ mt: 2 }}
+                  >
+                    {ksaChartData.map((item) => (
+                      <Stack
+                        key={item.name}
+                        direction="row"
+                        spacing={0.75}
+                        alignItems="center"
+                      >
+                        <Box
+                          sx={{
+                            width: 10,
+                            height: 10,
+                            borderRadius: "50%",
+                            bgcolor: item.color,
+                          }}
+                        />
+                        <Typography variant="caption">
+                          {item.name}
+                        </Typography>
                       </Stack>
-                      <LinearProgress
-                        variant="determinate"
-                        value={pct}
-                        sx={{
-                          flex: 1, height: 12, borderRadius: 6, bgcolor: "grey.100",
-                          "& .MuiLinearProgress-bar": { bgcolor: color, borderRadius: 6 },
+                    ))}
+                    {ksaChartData.length === 0 && (
+                      <Typography variant="caption" color="grey.400">No CLO data for this program.</Typography>
+                    )}
+                  </Stack>
+                </Box>
+              )}
+
+              {activeTab === "fourcs" && (
+                <Box>
+                  <Typography variant="caption" color="grey.400" sx={{ mb: 2, display: "block" }}>
+                    Percentage of approved courses aligned to each of the 4Cs
+                  </Typography>
+                  <ResponsiveContainer width="100%" height={320}>
+                    <RadialBarChart cx="50%" cy="50%" innerRadius="20%" outerRadius="90%" data={fourCsChartData} startAngle={90} endAngle={-270}>
+                      <RadialBar dataKey="value" cornerRadius={4} background={{ fill: "#f1f5f9" }} label={{ position: "insideStart", fill: "#fff", fontSize: 11, fontWeight: 600 }} />
+                      <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />
+                      <Tooltip formatter={v => [`${v}%`, ""]} contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} />
+                    </RadialBarChart>
+                  </ResponsiveContainer>
+                </Box>
+              )}
+
+              {activeTab === "blooms" && (
+                <Box>
+                  <Typography variant="caption" color="grey.400" sx={{ mb: 2, display: "block" }}>
+                    CLO distribution across Bloom's levels by year
+                  </Typography>
+                  <ResponsiveContainer width="100%" height={320}>
+                    <BarChart data={bloomsChartData} margin={{ top: 4, right: 12, left: -10, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                      <XAxis dataKey="year" tick={{ fontSize: 12, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                      <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                      <Tooltip
+                        itemSorter={(item) => BLOOM_ORDER.indexOf(item.dataKey)}
+                        contentStyle={{
+                          borderRadius: 8,
+                          border: "1px solid #e2e8f0",
+                          fontSize: 12,
                         }}
                       />
-                      <Typography variant="body2" color="grey.500" sx={{ width: 128, textAlign: "center", flexShrink: 0 }}>
-                        {aligned} / {total} CLOs
-                      </Typography>
-                    </Stack>
-                    
-                  );
-                })}
-              </Stack>
-              {selectedProgram?.plos?.length > 0 && (
-  <Stack
-    spacing={1.5}
-    sx={{
-      mt: 3,
-      pt: 2.5,
-      borderTop: "1px solid",
-      borderColor: "grey.100",
-      width: "100%",
-    }}
-  >
-    {selectedProgram.plos.map((plo) => (
-      <Stack
-        key={plo.code}
-        direction="row"
-      >
-        {/* PLO Number */}
-        <Box
-          sx={{
-            width: 100,
-            display: "flex",
-            justifyContent: "center",
-            flexShrink: 0,
-          }}
-        >
-          <Typography
-            variant="caption"
-            fontWeight={700}
-            color="primary.main"
-            sx={{ fontFamily: "monospace" }}
-          >
-            {plo.code}
-          </Typography>
-        </Box>
-
-        {/* Description */}
-        <Box sx={{ flex: 1 }}>
-          <Typography
-            variant="body2"
-            color="grey.600"
-            sx={{ lineHeight: 1.5 }}
-          >
-            {plo.desc}
-          </Typography>
-        </Box>
-      </Stack>
-    ))}
-  </Stack>
-)}
-            </Box>
-          )}
-          
-
-          {activeTab === "radar" && (
-            <Box>
-              <Typography variant="caption" color="grey.400" sx={{ mb: 2, display: "block" }}>
-                PLO coverage across all courses
-              </Typography>
-              <ResponsiveContainer width="100%" height={320}>
-                <RadarChart data={radarData[selectedCode]} outerRadius="75%">
-                  <PolarGrid stroke="#e2e8f0" />
-                  <PolarAngleAxis dataKey="plo" tick={{ fontSize: 12, fill: "#64748b" }} />
-                  <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 10, fill: "#94a3b8" }} />
-                  <Radar dataKey="value" stroke="#6366f1" fill="#6366f1" fillOpacity={0.25} strokeWidth={2} />
-                  <Tooltip formatter={v => [`${v}%`, "Coverage"]} contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} />
-                </RadarChart>
-              </ResponsiveContainer>
-              {selectedProgram?.plos?.length > 0 && (
-                <Stack
-  spacing={1.5}
-  sx={{
-    mt: 3,
-    pt: 2.5,
-    borderTop: "1px solid",
-    borderColor: "grey.100",
-    width: "100%",
-  }}
->
-  {selectedProgram.plos.map((plo) => (
-    <Stack
-      key={plo.code}
-      direction="row"
-    >
-      {/* PLO Number Column */}
-      <Box
-        sx={{
-          width: 100,
-          display: "flex",
-          justifyContent: "center",
-          flexShrink: 0,
-        }}
-      >
-        <Typography
-          variant="caption"
-          fontWeight={700}
-          color="primary.main"
-          sx={{
-            fontFamily: "monospace",
-          }}
-        >
-          {plo.code}
-        </Typography>
-      </Box>
-
-      {/* Description Column */}
-      <Box
-        sx={{
-          flex: 1,
-        }}
-      >
-        <Typography
-          variant="body2"
-          color="grey.600"
-          sx={{
-            lineHeight: 1.5,
-          }}
-        >
-          {plo.desc}
-        </Typography>
-      </Box>
-    </Stack>
-  ))}
-</Stack>
+                      {[...BLOOM_ORDER].reverse().map(level => (
+                        <Bar
+                          key={level}
+                          dataKey={level}
+                          stackId="bloom"
+                          fill={bloomColors[level]}
+                          radius={level === "REMEMBER" ? [3, 3, 0, 0] : [0, 0, 0, 0]}
+                        >
+                          <LabelList
+                            dataKey={level}
+                            position="center"
+                            formatter={(v) => (v ? `${v}%` : "")}
+                            fill="#fff"
+                            fontSize={10}
+                            fontWeight={600}
+                          />
+                        </Bar>
+                      ))}
+                    </BarChart>
+                  </ResponsiveContainer>
+                  <Stack
+                    direction="row"
+                    justifyContent="center"
+                    spacing={3}
+                    sx={{ mt: 2, flexWrap: "wrap" }}
+                  >
+                    {BLOOM_ORDER.map((level) => (
+                      <Stack
+                        key={level}
+                        direction="row"
+                        spacing={0.75}
+                        alignItems="center"
+                      >
+                        <Box
+                          sx={{
+                            width: 10,
+                            height: 10,
+                            borderRadius: "50%",
+                            bgcolor: bloomColors[level],
+                          }}
+                        />
+                        <Typography variant="caption">
+                          {bloomLabel(level)}
+                        </Typography>
+                      </Stack>
+                    ))}
+                  </Stack>
+                </Box>
               )}
-            </Box>
+            </>
           )}
-
-          {activeTab === "ksa" && (
-            <Box>
-              <Typography variant="caption" color="grey.400" sx={{ mb: 2, display: "block" }}>
-                Distribution of CLOs by Knowledge, Skills, and Attitude
-              </Typography>
-              <ResponsiveContainer width="100%" height={320}>
-                <PieChart>
-                  <Pie data={ksaData[selectedCode]} cx="50%" cy="50%" innerRadius={70} outerRadius={120} paddingAngle={3} dataKey="value">
-                    {ksaData[selectedCode].map((entry, i) => <Cell key={i} fill={entry.color} />)}
-                  </Pie>
-                  <Tooltip formatter={v => [`${v}%`, ""]} contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} />
-                </PieChart>
-              </ResponsiveContainer>
-              <Stack
-                direction="row"
-                justifyContent="center"
-                spacing={3}
-                sx={{ mt: 2 }}
-              >
-                {[
-                  { label: "Knowledge", color: "#6366f1" },
-                  { label: "Skills", color: "#22c55e" },
-                  { label: "Attitude", color: "#f97316" },
-                ].map((item) => (
-                  <Stack
-                    key={item.label}
-                    direction="row"
-                    spacing={0.75}
-                    alignItems="center"
-                  >
-                    <Box
-                      sx={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: "50%",
-                        bgcolor: item.color,
-                      }}
-                    />
-                    <Typography variant="caption">
-                      {item.label}
-                    </Typography>
-                  </Stack>
-                ))}
-              </Stack>
-            </Box>
-          )}
-
-          {activeTab === "fourcs" && (
-            <Box>
-              <Typography variant="caption" color="grey.400" sx={{ mb: 2, display: "block" }}>
-                Number of major courses aligned to each of the 4Cs
-              </Typography>
-              <ResponsiveContainer width="100%" height={320}>
-                <RadialBarChart cx="50%" cy="50%" innerRadius="20%" outerRadius="90%" data={fourCsData[selectedCode]} startAngle={90} endAngle={-270}>
-                  <RadialBar dataKey="value" cornerRadius={4} background={{ fill: "#f1f5f9" }} label={{ position: "insideStart", fill: "#fff", fontSize: 11, fontWeight: 600 }} />
-                  <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />
-                  <Tooltip formatter={v => [`${v}%`, ""]} contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} />
-                </RadialBarChart>
-              </ResponsiveContainer>
-            </Box>
-          )}
-
-          {activeTab === "blooms" && (
-            <Box>
-              <Typography variant="caption" color="grey.400" sx={{ mb: 2, display: "block" }}>
-                CLO distribution across Bloom's levels by year
-              </Typography>
-              <ResponsiveContainer width="100%" height={320}>
-                <BarChart data={bloomsData[selectedCode]} margin={{ top: 4, right: 12, left: -10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                  <XAxis dataKey="year" tick={{ fontSize: 12, fill: "#64748b" }} axisLine={false} tickLine={false} />
-                  <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-                  <Tooltip
-                    itemSorter={(item) => {
-                      const order = {
-                        Remember: 0,
-                        Understand: 1,
-                        Apply: 2,
-                        Analyze: 3,
-                        Evaluate: 4,
-                        Create: 5,
-                      };
-
-                      return order[item.dataKey];
-                    }}
-                    contentStyle={{
-                      borderRadius: 8,
-                      border: "1px solid #e2e8f0",
-                      fontSize: 12,
-                    }}
-                  />
-                  {[
-                    "Create",
-                    "Evaluate",
-                    "Analyze",
-                    "Apply",
-                    "Understand",
-                    "Remember",
-                  ].map(level => (
-                    <Bar
-                      key={level}
-                      dataKey={level}
-                      stackId="bloom"
-                      fill={bloomColors[level]}
-                      radius={level === "Remember" ? [3, 3, 0, 0] : [0, 0, 0, 0]}
-                    >
-                      <LabelList
-                        dataKey={level}
-                        position="center"
-                        formatter={(v) => `${v}%`}
-                        fill="#fff"
-                        fontSize={10}
-                        fontWeight={600}
-                      />
-                    </Bar>
-                  ))}
-                  ))}
-                </BarChart>
-              </ResponsiveContainer>
-              <Stack
-                direction="row"
-                justifyContent="center"
-                spacing={3}
-                sx={{ mt: 2, flexWrap: "wrap" }}
-              >
-                {[
-                  { label: "Remember", color: bloomColors.Remember },
-                  { label: "Understand", color: bloomColors.Understand },
-                  { label: "Apply", color: bloomColors.Apply },
-                  { label: "Analyze", color: bloomColors.Analyze },
-                  { label: "Evaluate", color: bloomColors.Evaluate },
-                  { label: "Create", color: bloomColors.Create },
-                ].map((item) => (
-                  <Stack
-                    key={item.label}
-                    direction="row"
-                    spacing={0.75}
-                    alignItems="center"
-                  >
-                    <Box
-                      sx={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: "50%",
-                        bgcolor: item.color,
-                      }}
-                    />
-                    <Typography variant="caption">
-                      {item.label}
-                    </Typography>
-                  </Stack>
-                ))}
-              </Stack>
-                          </Box>
-                        )}
-                      </Box>
-                    </Paper>
-                  </Box>
-                );
-              }
+        </Box>
+      </Paper>
+    </Box>
+  );
+}
