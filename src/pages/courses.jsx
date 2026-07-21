@@ -456,18 +456,19 @@ export default function Courses() {
             {formError && <Alert severity="error">{formError}</Alert>}
             {/* COURSE NAME + CODE */}
             <Grid container spacing={1.5}>
-              <Grid size={3}>
-                <Field
-                  label="Catalog Number"
-                  value={form.code}
-                  onChange={v => setForm(f => ({ ...f, code: v }))}
-                />
-              </Grid>
               <Grid size={9}>
                 <Field
-                  label="Course Title"
+                  label="Course Name"
                   value={form.name}
                   onChange={v => setForm(f => ({ ...f, name: v }))}
+                />
+              </Grid>
+
+              <Grid size={3}>
+                <Field
+                  label="Course Code"
+                  value={form.code}
+                  onChange={v => setForm(f => ({ ...f, code: v }))}
                 />
               </Grid>
             </Grid>

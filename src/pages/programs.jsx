@@ -6,6 +6,7 @@ import {
 import AddIcon from "@mui/icons-material/Add";
 import UploadIcon from "@mui/icons-material/Upload";
 import DownloadIcon from "@mui/icons-material/Download";
+import HistoryIcon from "@mui/icons-material/History";
 import EditIcon from "@mui/icons-material/Edit";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
@@ -114,6 +115,11 @@ export default function Programs() {
     setOriginalPloIds((p.plos || []).map(pl => pl.id));
     setFormError("");
     setModal("edit");
+  }
+
+  function openHistory(p) {
+    setSelected(p);
+    setModal("history");
   }
 
   async function handleExport(p) {
@@ -454,7 +460,7 @@ export default function Programs() {
 
             {/* SCHOOL + DEPARTMENT + VYEAR */}
             <Grid container spacing={1.5}>
-              <Grid size={4}>
+              <Grid size={6}>
                 <SelectField
                   label="School"
                   value={form.schoolCode}
@@ -463,7 +469,7 @@ export default function Programs() {
                 />
               </Grid>
 
-              <Grid size={4}>
+              <Grid size={6}>
                 <SelectField
                   label="Department"
                   value={form.deptId}
@@ -481,6 +487,7 @@ export default function Programs() {
                 />
               </Grid>
             </Grid>
+
 
             {/* DESCRIPTION */}
             <Box sx={{ width: "100%" }}>
@@ -551,7 +558,7 @@ export default function Programs() {
                           multiline
                           rows={2}
                           fullWidth
-                          label="PLO description"
+                          placeholder="PLO description"
                           onChange={e =>
                             setForm(f => {
                               const plos = [...f.plos];
@@ -564,7 +571,7 @@ export default function Programs() {
                           value={plo.keyword ?? ""}
                           size="small"
                           fullWidth
-                          label="Main keyword of PLO"
+                          placeholder="Main keyword of PLO"
                           onChange={e =>
                             setForm(f => {
                               const plos = [...f.plos];
@@ -693,6 +700,28 @@ export default function Programs() {
               />
             </Stack>
           )}
+        </Modal>
+      )}
+
+      {modal === "history" && selected && (
+        <Modal title={`History — ${selected.name}`} onClose={() => setModal(null)}>
+          <Stack spacing={0}>
+            {programHistory.map((h, i) => (
+              <Stack key={i} direction="row" spacing={1.5}>
+                <Stack alignItems="center">
+                  <Avatar sx={{ width: 28, height: 28, bgcolor: i === 0 ? "#eef2ff" : "grey.100" }}>
+                    {i === 0 ? <CheckIcon sx={{ fontSize: 13, color: "primary.main" }} /> : <ScheduleIcon sx={{ fontSize: 13, color: "grey.400" }} />}
+                  </Avatar>
+                  {i < programHistory.length - 1 && <Box sx={{ width: "1px", flex: 1, bgcolor: "grey.200", mt: 0.5 }} />}
+                </Stack>
+                <Box sx={{ pb: 2.5 }}>
+                  <Typography variant="body2" fontWeight={600} color="grey.800">{h.version}</Typography>
+                  <Typography variant="caption" color="grey.400" sx={{ display: "block", mt: 0.25 }}>{h.date} · {h.author}</Typography>
+                  <Typography variant="body2" color="grey.600" sx={{ mt: 0.5 }}>{h.note}</Typography>
+                </Box>
+              </Stack>
+            ))}
+          </Stack>
         </Modal>
       )}
     </Box>
