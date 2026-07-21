@@ -21,11 +21,42 @@ const bloomColors = {
   CREATE:     { bg: "#f0fdf4",   color: "#16a34a" },
 };
 
+const bloomLevels = [
+  { value: "REMEMBER", label: "Remember" },
+  { value: "UNDERSTAND", label: "Understand" },
+  { value: "APPLY", label: "Apply" },
+  { value: "ANALYZE", label: "Analyze" },
+  { value: "EVALUATE", label: "Evaluate" },
+  { value: "CREATE", label: "Create" },
+];
+
+const semesterOptions = [
+  { value: "1ST", label: "1st Semester" },
+  { value: "2ND", label: "2nd Semester" },
+  { value: "SUMMER", label: "Summer" },
+];
+
+const cloDomains = [
+  { value: "KNOWLEDGE", label: "Knowledge" },
+  { value: "SKILLS", label: "Skills" },
+  { value: "ATTITUDE", label: "Attitude" },
+];
+
+function bloomLabel(level) {
+  const found = bloomLevels.find(b => b.value === level);
+  return found ? found.label : level || "";
+}
+
+function domainLabel(domain) {
+  const found = cloDomains.find(d => d.value === domain);
+  return found ? found.label : domain || "";
+}
+
 function emptyForm() {
   return {
     id: null,
     code: "", name: "", program: "", units: "3", desc: "",
-    year: "", semester: "", versionYear: "", teacher: "",
+    year: "", semester: "", versionYear: "",
     clos: [{ id: null, code: "CLO1", desc: "", bloom: "", domain: "" }],
   };
 }
@@ -37,7 +68,6 @@ export default function Courses() {
   const [filterProgram, setFilterProgram] = useState("");
   const [filterBloom, setFilterBloom] = useState("");
   const [filterYear, setFilterYear] = useState("");
-  const [filterTeacher, setFilterTeacher] = useState("");
 
   const [expandedId, setExpandedId] = useState(null);
   const [modal, setModal] = useState(null);
@@ -58,15 +88,6 @@ export default function Courses() {
 
   const [form, setForm] = useState(emptyForm());
 
-  const bloomLevels = [
-    "REMEMBER",
-    "UNDERSTAND",
-    "APPLY",
-    "ANALYZE",
-    "EVALUATE",
-    "CREATE",
-  ];
-
   function loadAll() {
     setLoading(true);
     Promise.all([api.get("courses/"), api.get("programs/")])
@@ -80,10 +101,6 @@ export default function Courses() {
 
   useEffect(loadAll, []);
 
-  const teacherOptions = useMemo(
-    () => [...new Set(courses.map(c => c.teacher).filter(Boolean))].sort(),
-    [courses]
-  );
   const versionYearOptions = useMemo(
     () => [...new Set(courses.map(c => c.version_year).filter(Boolean))].sort((a, b) => b - a),
     [courses]
@@ -93,7 +110,6 @@ export default function Courses() {
     if (filterProgram && c.program !== filterProgram) return false;
     if (filterBloom && !(c.clos || []).some(cl => cl.clo_bloom === filterBloom)) return false;
     if (filterYear && c.version_year !== Number(filterYear)) return false;
-    if (filterTeacher && c.teacher !== filterTeacher) return false;
     return true;
   });
 
@@ -112,7 +128,6 @@ export default function Courses() {
       year: c.year != null ? String(c.year) : "",
       semester: c.semester ?? "",
       versionYear: c.version_year ?? "",
-      teacher: c.teacher ?? "",
       clos: (c.clos || []).map(cl => ({
         id: cl.id, code: cl.clo_code, desc: cl.clo_description,
         bloom: cl.clo_bloom, domain: cl.clo_domain,
@@ -158,7 +173,6 @@ export default function Courses() {
         year: Number(form.year) || null,
         semester: form.semester,
         version_year: form.versionYear || null,
-        teacher: form.teacher,
       });
       await saveClos(data.id);
       setModal(null);
@@ -185,7 +199,6 @@ export default function Courses() {
         year: Number(form.year) || null,
         semester: form.semester,
         version_year: form.versionYear || null,
-        teacher: form.teacher,
       });
       await saveClos(selected.id);
       setModal(null);
@@ -341,28 +354,10 @@ export default function Courses() {
             </MenuItem>
           ))}
         </TextField>
-        <TextField
-          select
-          size="small"
-          value={filterTeacher}
-          onChange={(e) => setFilterTeacher(e.target.value)}
-          sx={{ minWidth: 180 }}
-          SelectProps={{
-            displayEmpty: true,
-            renderValue: (value) => value || "All Teachers",
-          }}
-        >
-          <MenuItem value="">All Teachers</MenuItem>
-          {teacherOptions.map((t) => (
-            <MenuItem key={t} value={t}>
-              {t}
-            </MenuItem>
-          ))}
-        </TextField>
-        {(filterProgram || filterBloom || filterYear || filterTeacher) && (
+        {(filterProgram || filterBloom || filterYear) && (
           <Button
             color="inherit"
-            onClick={() => { setFilterProgram(""); setFilterBloom(""); setFilterYear(""); setFilterTeacher(""); }}
+            onClick={() => { setFilterProgram(""); setFilterBloom(""); setFilterYear(""); }}
             sx={{ color: "grey.500" }}
           >
             Clear filters
@@ -398,7 +393,6 @@ export default function Courses() {
                       {c.year != null ? ` · Year ${c.year}` : ""}
                       {c.semester ? ` · ${c.semester}` : ""}
                       {c.version_year ? ` · v${c.version_year}` : ""}
-                      {c.teacher ? ` · ${c.teacher}` : ""}
                     </Typography>
                   </Box>
 
@@ -454,16 +448,8 @@ export default function Courses() {
         <Modal title={modal === "add" ? "Add Course" : `Edit — ${selected?.course_title}`} onClose={() => !saving && setModal(null)} wide>
           <Stack spacing={2}>
             {formError && <Alert severity="error">{formError}</Alert>}
-            {/* COURSE NAME + CODE */}
+            {/* COURSE CODE (LEFT) + COURSE NAME (RIGHT) */}
             <Grid container spacing={1.5}>
-              <Grid size={9}>
-                <Field
-                  label="Course Name"
-                  value={form.name}
-                  onChange={v => setForm(f => ({ ...f, name: v }))}
-                />
-              </Grid>
-
               <Grid size={3}>
                 <Field
                   label="Course Code"
@@ -471,12 +457,20 @@ export default function Courses() {
                   onChange={v => setForm(f => ({ ...f, code: v }))}
                 />
               </Grid>
+
+              <Grid size={9}>
+                <Field
+                  label="Course Title"
+                  value={form.name}
+                  onChange={v => setForm(f => ({ ...f, name: v }))}
+                />
+              </Grid>
             </Grid>
             {/* PROGRAM + YEAR + SEMESTER + UNITS */}
             <Grid container spacing={1.5}>
               <Grid size={4}>
                 <SelectField
-                  label="Offering Program"
+                  label="Offering Department/Program"
                   value={form.program}
                   onChange={v => setForm(f => ({ ...f, program: v }))}
                   options={programs.map(p => ({ value: p.id, label: `${p.program_code} — ${p.program_name}` }))}
@@ -510,20 +504,12 @@ export default function Courses() {
               </Grid>
             </Grid>
             <Grid container spacing={1.5}>
-              <Grid size={4}>
+              <Grid size={12}>
                 <Field
                   label="Version Year"
                   value={form.versionYear}
                   onChange={v => setForm(f => ({ ...f, versionYear: v }))}
                   type="number"
-                />
-              </Grid>
-              <Grid size={8}>
-                <Field
-                  label="Teacher"
-                  value={form.teacher}
-                  onChange={v => setForm(f => ({ ...f, teacher: v }))}
-                  placeholder="Dr. A. Reyes"
                 />
               </Grid>
             </Grid>
@@ -602,7 +588,7 @@ export default function Courses() {
               <input ref={fileRef} type="file" accept=".xlsx,.xls" hidden onChange={handleFileSelected} />
               <Typography variant="caption" color="grey.400" align="center" sx={{ display: "block" }}>
                 Columns: catalog_number, course_title, course_description, program_code, units, year, semester,
-                version_year, teacher, clo_code, clo_description, clo_bloom, clo_domain
+                version_year, clo_code, clo_description, clo_bloom, clo_domain
               </Typography>
             </Stack>
           ) : (

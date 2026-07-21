@@ -25,7 +25,7 @@ const STATUS_COLORS = {
 function emptyForm() {
   return {
     id: null,
-    code: "", name: "", deptId: "", schoolCode: "", desc: "", versionYear: "",
+    code: "", name: "", deptId: "", schoolCode: "", desc: "", 
     plos: [{ id: null, code: "PLO1", desc: "", keyword: "", fourC: [] }],
   };
 }
@@ -106,7 +106,6 @@ export default function Programs() {
       name: p.program_name,
       deptId: p.dept ?? "",
       desc: p.description ?? "",
-      versionYear: p.version_year ?? "",
       plos: (p.plos || []).map(pl => ({
         id: pl.id, code: pl.plo_code, desc: pl.plo_description,
         keyword: pl.category ?? "", fourC: Array.isArray(pl.four_cs) ? pl.four_cs : []
@@ -136,83 +135,78 @@ export default function Programs() {
     }
   }
 
-  async function savePlos(programId) {
-  const keptIds = [];
+  async function savePlos(programCode) {
+    const keptIds = [];
 
-  for (const plo of form.plos) {
+    for (const plo of form.plos) {
+      const payload = {
+        program: programCode,
+        plo_code: plo.code,
+        plo_description: plo.desc,
+        category: plo.keyword || null,
+        four_cs: plo.fourC,
+      };
 
-    const payload = {
-      program: programId,
-      plo_code: plo.code,
-      plo_description: plo.desc,
-      category: plo.keyword,
-      four_cs: plo.fourC,
-    };
+      console.log("SENDING PLO:", payload);
 
-    console.log("SENDING PLO:", payload);
-
-    try {
-      if (plo.id) {
-        const response = await api.patch(
-          `plos/${plo.id}/`,
-          payload
-        );
-
-        console.log("PATCH SUCCESS:", response.data);
-
-        keptIds.push(plo.id);
-
-      } else {
-
-        const response = await api.post(
-          "plos/",
-          payload
-        );
-
-        console.log("POST SUCCESS:", response.data);
-
-        keptIds.push(response.data.id);
+      try {
+        if (plo.id) {
+          const response = await api.patch(
+            `plos/${plo.id}/`,
+            payload
+          );
+          console.log("PATCH SUCCESS:", response.data);
+          keptIds.push(plo.id);
+        } else {
+          const response = await api.post(
+            "plos/",
+            payload
+          );
+          console.log("POST SUCCESS:", response.data);
+          keptIds.push(response.data.id);
+        }
+      } catch (err) {
+        console.error("========== PLO ERROR ==========");
+        console.error("STATUS:", err.response?.status);
+        console.error("RESPONSE DATA:", err.response?.data);
+        console.error("SENT PAYLOAD:", payload);
+        console.error("FULL ERROR:", err);
+        throw err;
       }
-
-    } catch (err) {
-
-      console.error("========== PLO ERROR ==========");
-      console.error("STATUS:", err.response?.status);
-      console.error("RESPONSE DATA:", err.response?.data);
-      console.error("SENT PAYLOAD:", payload);
-      console.error("FULL ERROR:", err);
-
-      throw err;
     }
+
+    const removed = originalPloIds.filter(
+      id => !keptIds.includes(id)
+    );
+
+    await Promise.all(
+      removed.map(id => api.delete(`plos/${id}/`))
+    );
   }
-
-  const removed = originalPloIds.filter(
-    id => !keptIds.includes(id)
-  );
-
-  await Promise.all(
-    removed.map(id => api.delete(`plos/${id}/`))
-  );
-}
   
   async function saveAdd() {
     setSaving(true);
     setFormError("");
+    
+    // Find the department object to extract its string dept_code
+    const selectedDept = depts.find(d => d.dept_code === form.deptId || d.id === form.deptId);
+    const deptCodeToSend = selectedDept?.dept_code || (typeof form.deptId === "string" ? form.deptId : null);
+
     try {
       const { data } = await api.post("programs/", {
         program_code: form.code,
         program_name: form.name,
         description: form.desc,
-        schoolCode: dept?.school_code ?? "",
-        dept: form.deptId || null,
-        version_year: form.versionYear || null,
+        dept: deptCodeToSend || null, // Pass string code or null
       });
-      await savePlos(data.id);
+      
+      await savePlos(data.program_code || form.code);
       setModal(null);
       loadPrograms();
     } catch (err) {
       const d = err.response?.data;
-      setFormError(d ? Object.values(d).flat().join(" ") : "Could not create program.");
+      console.error("PROGRAM POST ERROR:", d);
+      setFormError(d ? Object.entries(d).map(([k, v]) => `${k}: ${v}`).join(" | ") : "Could not create program.");
     } finally {
       setSaving(false);
     }
@@ -222,20 +216,26 @@ export default function Programs() {
     if (!selected) return;
     setSaving(true);
     setFormError("");
+
+    // Find the department object to extract its string dept_code
+    const selectedDept = depts.find(d => d.dept_code === form.deptId || d.id === form.deptId);
+    const deptCodeToSend = selectedDept?.dept_code || (typeof form.deptId === "string" ? form.deptId : null);
+
     try {
       await api.patch(`programs/${selected.id}/`, {
         program_code: form.code,
         program_name: form.name,
         description: form.desc,
-        dept: form.deptId || null,
-        version_year: form.versionYear || null,
+        dept: deptCodeToSend || null, // Pass string code or null (no school_code)
       });
-      await savePlos(selected.id);
+
+      await savePlos(form.code);
       setModal(null);
       loadPrograms();
     } catch (err) {
       const d = err.response?.data;
-      setFormError(d ? Object.values(d).flat().join(" ") : "Could not save changes.");
+      console.error("PROGRAM PATCH ERROR:", d);
+      setFormError(d ? Object.entries(d).map(([k, v]) => `${k}: ${v}`).join(" | ") : "Could not save changes.");
     } finally {
       setSaving(false);
     }
@@ -257,6 +257,7 @@ export default function Programs() {
     setImportPreview(null);
     setImportFile(null);
     setImportError("");
+    if (fileRef.current) fileRef.current.value = "";
     setModal("import");
   }
 
@@ -477,17 +478,7 @@ export default function Programs() {
                   options={modalDepts.map(d => ({ value: d.id, label: d.dept_name }))}
                 />
               </Grid>
-              <Grid size={4}>
-                <TextField
-                  label="Version Year"
-                  fullWidth
-                  type="number"
-                  value={form.versionYear}
-                  onChange={(e) => setForm(f => ({ ...f, versionYear: e.target.value }))}
-                />
-              </Grid>
             </Grid>
-
 
             {/* DESCRIPTION */}
             <Box sx={{ width: "100%" }}>
@@ -700,28 +691,6 @@ export default function Programs() {
               />
             </Stack>
           )}
-        </Modal>
-      )}
-
-      {modal === "history" && selected && (
-        <Modal title={`History — ${selected.name}`} onClose={() => setModal(null)}>
-          <Stack spacing={0}>
-            {programHistory.map((h, i) => (
-              <Stack key={i} direction="row" spacing={1.5}>
-                <Stack alignItems="center">
-                  <Avatar sx={{ width: 28, height: 28, bgcolor: i === 0 ? "#eef2ff" : "grey.100" }}>
-                    {i === 0 ? <CheckIcon sx={{ fontSize: 13, color: "primary.main" }} /> : <ScheduleIcon sx={{ fontSize: 13, color: "grey.400" }} />}
-                  </Avatar>
-                  {i < programHistory.length - 1 && <Box sx={{ width: "1px", flex: 1, bgcolor: "grey.200", mt: 0.5 }} />}
-                </Stack>
-                <Box sx={{ pb: 2.5 }}>
-                  <Typography variant="body2" fontWeight={600} color="grey.800">{h.version}</Typography>
-                  <Typography variant="caption" color="grey.400" sx={{ display: "block", mt: 0.25 }}>{h.date} · {h.author}</Typography>
-                  <Typography variant="body2" color="grey.600" sx={{ mt: 0.5 }}>{h.note}</Typography>
-                </Box>
-              </Stack>
-            ))}
-          </Stack>
         </Modal>
       )}
     </Box>

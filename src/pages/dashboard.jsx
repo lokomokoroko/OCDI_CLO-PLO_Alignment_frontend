@@ -9,7 +9,7 @@ import FactCheckIcon from "@mui/icons-material/FactCheck";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-  PieChart, Pie, Cell, Tooltip, Legend,
+  PieChart, Pie, Cell, Tooltip,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   RadialBarChart, RadialBar,
   ResponsiveContainer, LabelList,
@@ -72,8 +72,6 @@ export default function Dashboard() {
   const [loadingCharts, setLoadingCharts] = useState(false);
   const [error, setError] = useState("");
 
-  // Programs list (for the selector + nested PLOs) and the overview
-  // counters — both from apps.programs.views.ProgramViewSet.
   useEffect(() => {
     setLoadingPrograms(true);
     Promise.all([
@@ -89,7 +87,6 @@ export default function Dashboard() {
       .finally(() => setLoadingPrograms(false));
   }, []);
 
-  // Per-program analytics actions on ProgramViewSet.
   useEffect(() => {
     if (!selectedId) return;
     setLoadingCharts(true);
@@ -112,7 +109,6 @@ export default function Dashboard() {
   }, [selectedId]);
 
   const selectedProgram = programs.find(p => p.id === selectedId);
-  const courseCount = selectedProgram?.course_count ?? 0;
 
   const cloChartRows = useMemo(
     () => cloRows.map((r, i) => ({ ...r, color: PLO_COLORS[i % PLO_COLORS.length] })),
@@ -133,13 +129,42 @@ export default function Dashboard() {
     [ksaRows]
   );
 
-  const fourCsChartData = useMemo(() => (
-    Object.entries(fourCsRows).map(([key, count]) => ({
-      name: FOUR_C_LABELS[key] ?? key,
-      value: courseCount > 0 ? Math.round((count / courseCount) * 1000) / 10 : 0,
-      fill: FOUR_C_COLORS[key] ?? "#94a3b8",
-    }))
-  ), [fourCsRows, courseCount]);
+  // Reordered: COMMITMENT to CONSCIENCE so that Conscience is rendered as the outer/first bar
+  const fourCsChartData = useMemo(() => {
+    const plos = selectedProgram?.plos || [];
+    const totalPlos = plos.length;
+    const keys = ["COMMITMENT", "COMPASSION", "COMPETENCE", "CONSCIENCE"];
+
+    return keys.map((key) => {
+      let count = 0;
+
+      if (plos.length > 0) {
+        count = plos.filter((plo) => {
+          const fourCsArray = plo.four_cs || plo.fourC || [];
+          return Array.isArray(fourCsArray) && fourCsArray.includes(key);
+        }).length;
+      } else {
+        count = Number(fourCsRows[key]) || 0;
+      }
+
+      const percentage = totalPlos > 0 ? Math.round((count / totalPlos) * 100) : 0;
+
+      return {
+        name: FOUR_C_LABELS[key] ?? key,
+        value: percentage,
+        count: count,
+        fill: FOUR_C_COLORS[key] ?? "#94a3b8",
+      };
+    });
+  }, [selectedProgram, fourCsRows]);
+
+  // Explicit array for bottom legend (Conscience first on the left)
+  const fourCsLegend = [
+    { name: "Conscience", color: FOUR_C_COLORS.CONSCIENCE },
+    { name: "Competence", color: FOUR_C_COLORS.COMPETENCE },
+    { name: "Compassion", color: FOUR_C_COLORS.COMPASSION },
+    { name: "Commitment", color: FOUR_C_COLORS.COMMITMENT },
+  ];
 
   const bloomsChartData = useMemo(() => (
     Object.entries(bloomsRows)
@@ -416,15 +441,69 @@ export default function Dashboard() {
               {activeTab === "fourcs" && (
                 <Box>
                   <Typography variant="caption" color="grey.400" sx={{ mb: 2, display: "block" }}>
-                    Percentage of approved courses aligned to each of the 4Cs
+                    Percentage of PLOs in this program mapped to each of the 4Cs
                   </Typography>
                   <ResponsiveContainer width="100%" height={320}>
-                    <RadialBarChart cx="50%" cy="50%" innerRadius="20%" outerRadius="90%" data={fourCsChartData} startAngle={90} endAngle={-270}>
-                      <RadialBar dataKey="value" cornerRadius={4} background={{ fill: "#f1f5f9" }} label={{ position: "insideStart", fill: "#fff", fontSize: 11, fontWeight: 600 }} />
-                      <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />
-                      <Tooltip formatter={v => [`${v}%`, ""]} contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} />
+                    <RadialBarChart 
+                      cx="50%" 
+                      cy="50%" 
+                      innerRadius="20%" 
+                      outerRadius="90%" 
+                      data={fourCsChartData} 
+                      startAngle={90} 
+                      endAngle={-270}
+                    >
+                      <RadialBar 
+                        dataKey="value" 
+                        cornerRadius={4} 
+                        background={{ fill: "#f1f5f9" }} 
+                        label={{ 
+                          position: "insideStart", 
+                          fill: "#fff", 
+                          fontSize: 11, 
+                          fontWeight: 600,
+                          formatter: (val) => `${val}%`
+                        }} 
+                      />
+                      <Tooltip 
+                        labelFormatter={(label, payload) => payload?.[0]?.payload?.name || label}
+                        formatter={(val, _, item) => [
+                          `${val}% (${item.payload.count} / ${selectedProgram?.plos?.length ?? 0} PLOs)`,
+                          "Coverage"
+                        ]} 
+                        contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} 
+                      />
                     </RadialBarChart>
                   </ResponsiveContainer>
+                  
+                  {/* Clean Custom Legend starting with Conscience on the far left */}
+                  <Stack
+                    direction="row"
+                    justifyContent="center"
+                    spacing={3}
+                    sx={{ mt: 2 }}
+                  >
+                    {fourCsLegend.map((item) => (
+                      <Stack
+                        key={item.name}
+                        direction="row"
+                        spacing={0.75}
+                        alignItems="center"
+                      >
+                        <Box
+                          sx={{
+                            width: 10,
+                            height: 10,
+                            borderRadius: "50%",
+                            bgcolor: item.color,
+                          }}
+                        />
+                        <Typography variant="caption" color="grey.700">
+                          {item.name}
+                        </Typography>
+                      </Stack>
+                    ))}
+                  </Stack>
                 </Box>
               )}
 
